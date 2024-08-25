@@ -1,0 +1,16 @@
+[
+  {
+    "Subject": "Trade #1001",
+    "Description": "New trade 1001",
+    "Origin": "Web",
+    "Status": "New",
+    "Priority": "Low"
+  },
+  {
+    "Subject": "Trade #1002",
+    "Description": "New trade 1002",
+    "Origin": "Web",
+    "Status": "New",
+    "Priority": "High"
+  }
+]
