@@ -1,4 +1,6 @@
-﻿namespace SF_Connected_App
+﻿using Newtonsoft.Json;
+
+namespace SF_Connected_App
 {
     public class Program
     {
@@ -12,8 +14,10 @@
             }
             else
             {
+                string jsonContent = await File.ReadAllTextAsync("CaseDetails.json");
+                var casesObject = JsonConvert.DeserializeObject<List<object>>(jsonContent);
                 await salesforceClient.GetAllCasesAsync();
-                await salesforceClient.CreateCaseAsync();
+                await salesforceClient.CreateCasesAsync(casesObject);
             }
         }
     }
