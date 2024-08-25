@@ -12,7 +12,8 @@
             }
             else
             {
-                await salesforceClient.MakeApiCallAsync();
+                await salesforceClient.GetAllCasesAsync();
+                await salesforceClient.CreateCaseAsync();
             }
         }
     }
