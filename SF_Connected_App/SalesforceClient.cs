@@ -109,7 +109,14 @@ namespace SF_Connected_App
 
         public async Task CreateCasesAsync(IEnumerable<Object> cases)
         {
-            using (var httpClient = new HttpClient())
+            var proxy = new WebProxy(proxyUrl, false);
+            var handler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                UseProxy = true,
+                ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+            };
+            using (var httpClient = new HttpClient(handler))
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var caseEndpoint = $"{instanceUrl}/services/data/v58.0/sobjects/Case/";
