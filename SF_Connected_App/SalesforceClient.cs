@@ -107,52 +107,35 @@ namespace SF_Connected_App
             }
         }
 
-        public async Task CreateCaseAsync()
+        public async Task CreateCasesAsync(IEnumerable<Object> cases)
         {
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 var caseEndpoint = $"{instanceUrl}/services/data/v58.0/sobjects/Case/";
-                var request = new HttpRequestMessage(HttpMethod.Post, caseEndpoint);
-                var caseData = new
+
+                foreach (var caseData in cases)
                 {
-                    Subject = "Trade #1000",
-                    Description = "new trade has been made",
-                    Origin = "Web",
-                    Status = "New",
-                    Priority = "Low"
-                };
+                    var request = new HttpRequestMessage(HttpMethod.Post, caseEndpoint);
 
-                String json = JsonConvert.SerializeObject(caseData);
+                    string json = JsonConvert.SerializeObject(caseData);
+                    request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await httpClient.SendAsync(request);
 
-                var response = await httpClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    string result = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine("Case created successfully. Response: " + result);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string result = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine("Case created successfully. Response: " + result);
+                    }
+                    else
+                    {
+                        string error = await response.Content.ReadAsStringAsync();
+                        Console.WriteLine("Error creating case: " + error);
+                    }
                 }
-                else
-                {
-                    string error = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine("Error creating case: " + error);
-                }
-
             }
         }
-
-
-
-
-
-
-
-
-
-
-
     }  
 }      
        
