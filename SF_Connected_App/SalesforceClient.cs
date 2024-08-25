@@ -1,8 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +20,7 @@ namespace SF_Connected_App
         private readonly string username;
         private readonly string password;
         private readonly string tokenUrl;
+        private readonly string proxyUrl;
         private string accessToken;
         private string instanceUrl;
 
@@ -33,12 +36,21 @@ namespace SF_Connected_App
             username = _configuration["Salesforce:Username"];
             password = _configuration["Salesforce:Password"];
             tokenUrl = _configuration["Salesforce:TokenUrl"];
+            proxyUrl = _configuration["Salesforce:ProxyUrl"];
 
         }
 
         public async Task<string> GetAccessTokenAsync()
         {
-            using (var httpClient = new HttpClient())
+
+            var proxy = new WebProxy(proxyUrl, false);
+            var handler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                UseProxy = true,
+                ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+            };
+            using (var httpClient = new HttpClient(handler))
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, tokenUrl);
 
@@ -73,16 +85,61 @@ namespace SF_Connected_App
             }
         }
 
-        public async Task MakeApiCallAsync()
+        public async Task GetAllCasesAsync()
+        {
+
+            var proxy = new WebProxy(proxyUrl, false); 
+            var handler = new HttpClientHandler
+            {
+                Proxy = proxy,
+                UseProxy = true,
+                ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) => true
+            };
+
+            using (var httpClient = new HttpClient(handler))
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                var response = await httpClient.GetAsync($"{instanceUrl}/services/data/v58.0/sobjects/Case/");
+                var content = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine("Cases info : " + content);
+            }
+        }
+
+        public async Task CreateCaseAsync()
         {
             using (var httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                var caseEndpoint = $"{instanceUrl}/services/data/v58.0/sobjects/Case/";
+                var request = new HttpRequestMessage(HttpMethod.Post, caseEndpoint);
+                var caseData = new
+                {
+                    Subject = "Trade #1000",
+                    Description = "new trade has been made",
+                    Origin = "Web",
+                    Status = "New",
+                    Priority = "Low"
+                };
 
-                var response = await httpClient.GetAsync($"{instanceUrl}/services/data/v58.0/sobjects/Account/");
-                var content = await response.Content.ReadAsStringAsync();
+                String json = JsonConvert.SerializeObject(caseData);
 
-                Console.WriteLine("API Response: " + content);
+                request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string result = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine("Case created successfully. Response: " + result);
+                }
+                else
+                {
+                    string error = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine("Error creating case: " + error);
+                }
+
             }
         }
 
